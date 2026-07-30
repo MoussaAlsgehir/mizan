@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ميزان | نظام إدارة الحلقات القرآنية</title>
+
+  <!-- Fonts: Cairo -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Icons: FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Tailwind CSS (CDN for standalone production) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- SheetJS for Excel/CSV processing -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+
+  <!-- Tailwind Configuration -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Cairo', 'sans-serif'],
+          },
+          colors: {
+            brown: {
+              950: '#3D2A0A',
+              900: '#5C3A0A',
+              800: '#6D4516',
+              700: '#7E5120',
+              600: '#8B5D2A',
+              500: '#926121', // Primary Dark Brown
+              400: '#A87530',
+              300: '#B38953', // Warm Gold accent
+              200: '#C49A6A',
+              100: '#AE8E64', // Light Sand / tan
+              50: '#D4B896',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="text-gray-800 antialiased h-screen flex flex-col overflow-hidden">
+
+  <!-- Top Navigation Bar -->
+  <header id="main-nav" class="bg-brown-900 text-white shadow-md hide-in-presentation flex-shrink-0 relative z-10">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <i class="fa-solid fa-scale-balanced text-brown-300 text-2xl"></i>
+        <h1 class="text-2xl font-bold tracking-wide">ميزان</h1>
+        <span class="text-brown-200 text-sm hidden md:inline mr-2 pr-2 border-r border-brown-700">نظام إدارة الحلقات
+          القرآنية</span>
+      </div>
+      <nav class="flex gap-2 md:gap-4">
+        <button onclick="App.navigate('home')" class="nav-btn px-3 py-2 rounded hover:bg-brown-800 transition"
+          data-target="home">
+          <i class="fa-solid fa-home ml-1"></i> الرئيسية
+        </button>
+        <button onclick="App.navigate('dashboard')" class="nav-btn px-3 py-2 rounded hover:bg-brown-800 transition"
+          data-target="dashboard">
+          <i class="fa-solid fa-cogs ml-1"></i> لوحة التحكم
+        </button>
+        <button onclick="App.navigate('session')"
+          class="nav-btn px-3 py-2 rounded hover:bg-brown-800 transition hidden font-bold "
+          id="nav-session-btn" data-target="session">
+          <i class="fa-solid fa-chalkboard-user ml-1"></i> الجلسة الحالية
+       
+        </button>
+      </nav>
+      <div class="flex items-center gap-3">
+        <button onclick="App.toggleSound()" class="text-brown-200 hover:text-white transition"
+          title="تشغيل/إيقاف الصوت">
+          <i id="sound-icon" class="fa-solid fa-volume-high text-xl"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="flex-grow overflow-y-auto relative p-4 md:p-6" id="main-content">
+
+    <!-- ================= VIEW: HOME ================= -->
+    <section id="view-home" class="view-section container mx-auto max-w-5xl fade-in">
+      <div class="text-center mb-10 mt-6">
+        <div class="inline-block p-4 bg-brown-900 rounded-full mb-4 shadow-lg border-2 border-brown-300">
+          <i class="fa-solid fa-scale-balanced text-brown-300 text-5xl"></i>
+        </div>
+        <h2 class="text-4xl font-bold text-brown-900 mb-3">مرحباً بك في نظام ميزان</h2>
+        <p class="text-gray-600 text-lg max-w-2xl mx-auto">نظام احترافي لإدارة الجلسات القرآنية، يضمن التوزيع العادل
+          للأسئلة والطلاب مع تقييم تفاعلي وإحصائيات دقيقة.</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-8 mb-8">
+        <!-- Students Setup -->
+        <div class="mizan-card p-6">
+          <h3 class="text-xl font-bold text-brown-900 mb-4 border-b pb-2"><i
+              class="fa-solid fa-users text-brown-300 ml-2"></i> إعداد الطلاب</h3>
+
+          <div id="students-status" class="mb-4 p-3 bg-gray-50 border rounded text-sm">
+            جاري التحميل...
+          </div>
+
+          <div class="flex flex-col gap-3">
+            <label class="btn btn-outline w-full cursor-pointer justify-center border-dashed border-2">
+              <i class="fa-solid fa-file-excel ml-2"></i> استيراد ملف الطلاب (Excel/CSV)
+              <input type="file" id="upload-students" accept=".xlsx, .xls, .csv" class="hidden">
+            </label>
+            <button onclick="App.navigate('dashboard')" class="text-brown-600 hover:underline text-sm text-right">أو
+              إضافة الطلاب يدوياً من لوحة التحكم &larr;</button>
+          </div>
+        </div>
+
+        <!-- Questions Setup -->
+        <div class="mizan-card p-6">
+          <h3 class="text-xl font-bold text-brown-900 mb-4 border-b pb-2"><i
+              class="fa-solid fa-circle-question text-brown-300 ml-2"></i> إعداد الأسئلة</h3>
+
+          <div id="questions-status" class="mb-4 p-3 bg-gray-50 border rounded text-sm">
+            جاري التحميل...
+          </div>
+          <div class="flex flex-col gap-3">
+            <label class="btn btn-outline w-full cursor-pointer justify-center border-dashed border-2">
+              <i class="fa-solid fa-file-excel ml-2"></i> استيراد ملف الأسئلة (Excel/CSV)
+              <input type="file" id="upload-questions" accept=".xlsx, .xls, .csv" class="hidden">
+            </label>
+            <button onclick="App.navigate('dashboard')" class="text-brown-600 hover:underline text-sm text-right">أو
+              إضافة الأسئلة يدوياً من لوحة التحكم &larr;</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Session Config & Start -->
+      <div class="mizan-card p-6 text-center max-w-2xl mx-auto">
+        <h3 class="text-xl font-bold text-brown-900 mb-4">إعدادات الجلسة</h3>
+
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div>
+            <label class="block text-right text-sm font-semibold mb-2">تحديد الحلقة (اختياري)</label>
+            <select id="circle-filter" class="mizan-input">
+              <option value="all">جميع الحلقات</option>
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          <div>
+            <label class="block text-right text-sm font-semibold mb-2">المؤقت</label>
+            <select id="timer-setting" class="mizan-input">
+              <option value="0">بدون مؤقت</option>
+              <option value="10">10 ثانية</option>
+              <option value="30">30 ثانية</option>
+              <option value="60" selected>60 ثانية</option>
+              <option value="90">90 ثانية</option>
+            </select>
+          </div>
+        </div>
+
+        <button onclick="Session.startNew()" class="btn btn-primary w-full text-xl py-4 shadow-lg"
+          id="start-session-btn">
+          <i class="fa-solid fa-play ml-2 text-gold-400"></i> بدء الجلسة الآن
+        </button>
+        <div class="mt-3 text-sm text-gray-500">سيتم تصفير النقاط وبدء جلسة جديدة. (التقدم الحالي محفوظ تلقائياً)</div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW: DASHBOARD ================= -->
+    <section id="view-dashboard" class="view-section container mx-auto fade-in hidden">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold text-brown-900"><i class="fa-solid fa-cogs text-brown-300 ml-2"></i> لوحة التحكم
+        </h2>
+        <div class="flex gap-2">
+          <button onclick="UI.showTab('dash-students')" class="btn btn-primary dash-tab-btn" id="tab-btn-students">إدارة
+            الطلاب</button>
+          <button onclick="UI.showTab('dash-questions')" class="btn btn-outline dash-tab-btn"
+            id="tab-btn-questions">إدارة الأسئلة</button>
+        </div>
+      </div>
+
+      <!-- Students Tab -->
+      <div id="dash-students" class="dash-tab">
+        <div class="mizan-card p-6 mb-6">
+          <h3 class="text-lg font-bold mb-4 text-brown-900 border-b pb-2">إضافة طالب جديد</h3>
+          <form id="add-student-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+              <label class="block text-sm mb-1">اسم الطالب *</label>
+              <input type="text" id="stu-name" required class="mizan-input" placeholder="مثال: أحمد محمد">
+            </div>
+            <div>
+              <label class="block text-sm mb-1">الحلقة *</label>
+              <input type="text" id="stu-circle" required class="mizan-input" placeholder="مثال: الإمام النووي">
+
+            </div>
+            <div>
+              <label class="block text-sm mb-1">المستوى</label>
+              <input type="text" id="stu-level" class="mizan-input" placeholder="مثال: أول">
+            </div>
+            <div>
+              <button type="submit" class="btn btn-primary w-full"><i class="fa-solid fa-plus ml-1"></i> إضافة</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="mizan-card bg-white rounded-lg overflow-hidden border">
+          <div class="flex justify-between items-center p-4 bg-gray-50 border-b">
+            <h3 class="font-bold">قائمة الطلاب</h3>
+            <button onclick="DB.clearStudents(); UI.renderDashboardTables();"
+              class="btn btn-danger text-sm py-1 px-2"><i class="fa-solid fa-trash ml-1"></i> حذف الكل</button>
+          </div>
+          <div class="overflow-x-auto max-h-96">
+            <table id="students-table">
+              <thead>
+                <tr>
+                  <th>الاسم</th>
+                  <th>الحلقة</th>
+                  <th>المستوى</th>
+                  <th class="text-center">إجراء</th>
+                </tr>
+              </thead>
+              <tbody id="students-tbody">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Questions Tab -->
+      <div id="dash-questions" class="dash-tab hidden">
+        <div class="mizan-card p-6 mb-6">
+          <h3 class="text-lg font-bold mb-4 text-brown-900 border-b pb-2">إضافة سؤال جديد</h3>
+          <form id="add-question-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+            <div>
+              <label class="block text-sm mb-1">التصنيف</label>
+              <input type="text" id="q-category" class="mizan-input" placeholder="مثال: تجويد">
+            </div>
+            <div>
+              <label class="block text-sm mb-1">الدرس</label>
+              <input type="text" id="q-lesson" class="mizan-input" placeholder="مثال: النون الساكنة">
+            </div>
+            <div class="lg:col-span-2">
+              <label class="block text-sm mb-1">السؤال *</label>
+              <input type="text" id="q-text" required class="mizan-input" placeholder="نص السؤال...">
+            </div>
+            <div class="lg:col-span-2">
+              <label class="block text-sm mb-1">الجواب *</label>
+              <input type="text" id="q-answer" required class="mizan-input" placeholder="الجواب الصحيح...">
+            </div>
+            <div>
+              <button type="submit" class="btn btn-primary w-full h-10"><i class="fa-solid fa-plus ml-1"></i>
+                إضافة</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="mizan-card bg-white rounded-lg overflow-hidden border">
+          <div class="flex justify-between items-center p-4 bg-gray-50 border-b">
+            <h3 class="font-bold">قائمة الأسئلة</h3>
+            <button onclick="DB.clearQuestions(); UI.renderDashboardTables();"
+              class="btn btn-danger text-sm py-1 px-2"><i class="fa-solid fa-trash ml-1"></i> حذف الكل</button>
+
+          </div>
+          <div class="overflow-x-auto max-h-96">
+            <table id="questions-table">
+              <thead>
+                <tr>
+                  <th>التصنيف</th>
+                  <th>الدرس</th>
+                  <th>السؤال</th>
+                  <th>الجواب</th>
+                  <th class="text-center">إجراء</th>
+                </tr>
+              </thead>
+              <tbody id="questions-tbody">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW: SESSION (ACTIVE QUIZ) ================= -->
+    <section id="view-session" class="view-section h-full fade-in hidden flex-col md:flex-row gap-6">
+
+      <!-- Main Presentation Area -->
+      <div class="flex-grow flex flex-col h-full gap-4 transition-all duration-500" id="session-main-area">
+
+        <!-- Top Bar in Session -->
+        <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border hide-in-presentation">
+          <div class="font-bold text-brown-900">
+            <i class="fa-solid fa-chalkboard text-brown-300 ml-2"></i>
+            الجلسة الحالية <span id="session-circle-name" class="text-sm font-normal text-gray-500 mr-2"></span>
+          </div>
+          <div>
+            <button onclick="Session.togglePresentation()" class="btn btn-outline text-sm py-1 px-3">
+              <i class="fa-solid fa-expand ml-1"></i> وضع العرض (Projector)
+            </button>
+          </div>
+        </div>
+
+        <!-- The Stage (Question & Student Card) -->
+        <div
+          class="mizan-card flex-grow flex flex-col items-center justify-center p-8 relative overflow-hidden text-center stage-container">
+
+          <!-- Timer -->
+          <div id="timer-container"
+            class="absolute top-6 left-6 text-2xl font-bold text-brown-900 timer-display hidden">
+            <i class="fa-regular fa-clock text-brown-300 ml-1"></i> <span id="time-left">60</span>
+          </div>
+
+          <!-- Stage Content -->
+          <div id="stage-init" class="text-center w-full">
+            <i class="fa-solid fa-hand-pointer text-6xl text-gray-300 mb-4"></i>
+            <h2 class="text-2xl text-gray-500">اضغط على الزر لاختيار طالب وسؤال عشوائي</h2>
+          </div>
+
+          <div id="stage-active" class="hidden w-full max-w-4xl mx-auto flex flex-col items-center">
+            <div class="text-sm text-gray-500 mb-2 font-bold" id="s-category-lesson"></div>
+
+            <h1 id="s-student-name" class="text-5xl font-black text-brown-900 mb-6 student-name-display tracking-wide">
+            </h1>
+
+            <div class="bg-gray-50 border-2 border-dashed border-gray-300 p-8 rounded-xl w-full mb-8 relative">
+              <h2 id="s-question-text" class="text-3xl font-bold text-gray-800 question-display leading-relaxed"></h2>
+            </div>
+
+            <!-- Answer Reveal Area -->
+            <div id="answer-area" class="w-full flex flex-col items-center">
+              <button id="btn-reveal" onclick="Session.revealAnswer()"
+                class="btn btn-gold text-xl py-3 px-8 shadow-lg mb-4 rounded-full">
+                <i class="fa-solid fa-eye ml-2"></i> إظهار الإجابة
+              </button>
+
+              <div id="revealed-answer" class="hidden w-full">
+                <div
+                  class="bg-brown-50 border border-brown-200 text-brown-900 p-6 rounded-lg text-2xl font-bold mb-6 question-display">
+                  <span class="text-brown-700 text-lg block mb-1">الجواب الصحيح:</span>
+                  <span id="s-answer-text"></span>
+                </div>
+
+                <div class="flex gap-4 justify-center hide-in-presentation flex-wrap">
+                  <button onclick="Session.gradeAnswer('correct')" class="btn btn-success text-lg py-2 px-6 shadow">
+                    <i class="fa-solid fa-check ml-1"></i> إجابة صحيحة
+                  </button>
+                  <button onclick="Session.gradeAnswer('wrong')" class="btn btn-danger text-lg py-2 px-6 shadow">
+                    <i class="fa-solid fa-times ml-1"></i> إجابة خاطئة
+                  </button>
+                  <button onclick="Session.gradeAnswer('skip')" class="btn btn-outline text-lg py-2 px-6 bg-white">
+                    <i class="fa-solid fa-forward-step ml-1"></i> تخطي
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Action Button -->
+        <div class="text-center hide-in-presentation relative z-20">
+          <button id="btn-next-turn" onclick="Session.nextTurn()"
+            class="btn btn-primary text-2xl py-4 px-12 shadow-xl rounded-full border-4 border-white transform transition hover:scale-105">
+            <i class="fa-solid fa-random ml-2 text-gold-400"></i> اختيار عشوائي (طالب وسؤال)
+          </button>
+        </div>
+
+        <!-- Presentation Mode Action Bar (Only visible in presentation mode) -->
+        <div class="hidden presentation-controls fixed bottom-8 left-0 right-0 flex justify-center gap-6 z-50">
+          <button id="btn-reveal-pres" onclick="Session.revealAnswer()"
+            class="btn btn-gold text-2xl py-4 px-8 shadow-2xl rounded-full hidden">
+            <i class="fa-solid fa-eye ml-2"></i> إظهار الإجابة
+          </button>
+          <button id="btn-next-pres" onclick="Session.nextTurn()"
+            class="btn bg-white text-brown-900 text-2xl py-4 px-8 shadow-2xl rounded-full border-4 border-brown-900">
+            <i class="fa-solid fa-random ml-2 text-gold-400"></i> التالي
+          </button>
+          <button onclick="Session.togglePresentation()"
+            class="btn btn-danger text-xl py-4 px-6 shadow-2xl rounded-full opacity-50 hover:opacity-100">
+            <i class="fa-solid fa-compress"></i> إغلاق العرض
+          </button>
+        </div>
+      </div>
+
+      <!-- Sidebar: Stats & Leaderboard -->
+      <div class="w-full md:w-80 flex-shrink-0 flex flex-col gap-4 hide-in-presentation overflow-y-auto"
+        id="session-sidebar">
+
+        <!-- Stats Panel -->
+        <div class="mizan-card p-4">
+          <h3 class="font-bold text-brown-900 mb-3 border-b pb-2"><i
+              class="fa-solid fa-chart-pie text-brown-300 ml-1"></i> الإحصائيات</h3>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div class="bg-gray-50 p-2 rounded text-center border">
+              <span class="block text-gray-500 text-xs">إجمالي الطلاب</span>
+              <span class="font-bold text-lg" id="stat-total-students">0</span>
+            </div>
+            <div class="bg-gray-50 p-2 rounded text-center border">
+              <span class="block text-gray-500 text-xs">تمت مناداتهم</span>
+              <span class="font-bold text-lg text-brown-700" id="stat-called-students">0</span>
+            </div>
+            <div class="bg-gray-50 p-2 rounded text-center border">
+              <span class="block text-gray-500 text-xs">إجمالي الأسئلة</span>
+              <span class="font-bold text-lg" id="stat-total-questions">0</span>
+            </div>
+            <div class="bg-gray-50 p-2 rounded text-center border">
+              <span class="block text-gray-500 text-xs">المستخدمة</span>
+              <span class="font-bold text-lg text-brown-700" id="stat-used-questions">0</span>
+            </div>
+          </div>
+
+          <div class="mt-3 text-sm">
+            <div class="flex justify-between mb-1">
+              <span>إجابات صحيحة: <span class="text-brown-600 font-bold" id="stat-correct">0</span></span>
+              <span>خاطئة: <span class="text-red-600 font-bold" id="stat-wrong">0</span></span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+              <div id="stat-success-bar" class="bg-brown-600 h-2 rounded-full" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="mizan-card p-4 flex-grow flex flex-col">
+          <h3 class="font-bold text-brown-900 mb-3 border-b pb-2 flex justify-between items-center">
+            <span><i class="fa-solid fa-trophy text-brown-300 ml-1"></i> لوحة الشرف</span>
+            <button onclick="Session.resetScores()" class="text-xs text-red-500 hover:underline">تصفير النقاط</button>
+          </h3>
+          <div class="overflow-y-auto flex-grow" style="max-height: 400px;">
+            <table class="w-full text-sm">
+              <thead>
+                <tr>
+                  <th class="bg-gray-100 text-gray-600 py-1 px-2 text-right rounded-r">الطالب</th>
+                  <th class="bg-gray-100 text-gray-600 py-1 px-2 text-center rounded-l">النقاط</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-tbody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <div id="toast-container"></div>
+
+  <!-- ========================================== -->
+  <!-- ============ JAVASCRIPT LOGIC ============ -->
+  <!-- ========================================== -->
+  <script src="script.js"></script>
+</body>
+
+</html>
